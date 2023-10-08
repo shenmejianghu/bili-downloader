@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <title>b站视频下载_bilibili视频下载</title>
+    <meta name="keywords" content="b站视频下载_bilibili视频下载"/>
+    <meta name="description" content="b站视频下载_bilibili视频下载"/>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" th:href="@{/js/layui/css/layui.css}" media="all">
+    <style>
+        body {
+            overflow-y: scroll;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-panel">
+    <div style="padding: 32px;">
+        <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">视频地址</label>
+                <div class="layui-input-block">
+                    <input type="text" id="url" name="url" autocomplete="off" placeholder="请输入视频地址" lay-verify="required" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <button class="layui-btn" lay-submit lay-filter="submit">解析视频</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script th:src="@{/js/layui/layui.js}" charset="utf-8"></script>
+<script th:inline="javascript">
+    var ctx = [[${#httpServletRequest.getContextPath()}]];
+    layui.use(['layer', 'jquery', 'form'], function () {
+        var layer = layui.layer
+                , $ = layui.$
+                , form = layui.form;
+        form.on('submit(submit)', function(data){
+            var index = layer.load();
+            var field = data.field;
+            $.get(ctx+"/parse",{url:field.url},function(result){
+                layer.close(index);
+                if (result.code !== 200){
+                    layer.alert(result.message);
+                }else {
+                    var fileId = result.data;
+                    layer.confirm('视频解析完成,确定开始下载视频,取消则放弃下载', {icon: 3}, function(){
+                        layer.msg('开始下载');
+                        window.location.href = ctx+'/download?file='+fileId;
+                    }, function(){
+
+                    });
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>
