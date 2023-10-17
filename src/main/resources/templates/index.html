@@ -31,6 +31,33 @@
         </form>
     </div>
 </div>
+<div class="layui-panel">
+    <div style="padding: 32px;">
+        <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item">
+                <label class="layui-form-label">服务器地址</label>
+                <div class="layui-input-block">
+                    <input type="text" id="liveUrl" name="liveUrl" autocomplete="off" placeholder="请输入服务器地址" lay-verify="required" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">串流密钥</label>
+                <div class="layui-input-block">
+                    <input type="text" id="secret" name="secret" autocomplete="off" placeholder="请输入串流密钥" lay-verify="required" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">循环次数</label>
+                <div class="layui-input-block">
+                    <input type="text" id="loop" name="loop" autocomplete="off" placeholder="请输入循环次数" lay-verify="required" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <button class="layui-btn" lay-submit lay-filter="submit1">开始直播</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script th:src="@{/js/layui/layui.js}" charset="utf-8"></script>
 <script th:inline="javascript">
@@ -54,6 +81,22 @@
                     }, function(){
 
                     });
+                }
+            });
+            return false;
+        });
+		form.on('submit(submit1)', function(data){
+            var index = layer.load();
+            var field = data.field;
+            $.ajax({
+                url:ctx+"/live",
+                type:"POST",
+                data:JSON.stringify({url:field.liveUrl,secret:field.secret,loop:field.loop}),
+                contentType:"application/json",
+                dataType:"json",
+                success: function(result){
+                    layer.close(index);
+                    layer.alert(result.message);
                 }
             });
             return false;

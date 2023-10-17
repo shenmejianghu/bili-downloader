@@ -1,10 +1,13 @@
 package com.bilibili.downloader.controller;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.crypto.digest.MD5;
+import cn.hutool.http.HttpRequest;
 import cn.hutool.json.JSON;
 import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.bilibili.downloader.pojo.LiveConfig;
 import com.bilibili.downloader.pojo.Result;
 import com.bilibili.downloader.util.HttpFile;
 import org.apache.commons.io.IOUtils;
@@ -18,6 +21,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.client.ClientHttpRequest;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.client.RequestCallback;
@@ -26,6 +30,10 @@ import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.net.Authenticator;
+import java.net.InetSocketAddress;
+import java.net.PasswordAuthentication;
+import java.net.Proxy;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -243,5 +251,58 @@ public class MainController {
             logger.error(ExceptionUtils.getStackTrace(e));
             return Result.fail(null,"视频地址解析错误");
         }
+    }
+	
+	@RequestMapping("/live")
+    @ResponseBody
+    public Result<String> live(@RequestBody LiveConfig live){
+        List<String> commands = new ArrayList<>();
+        commands.add(ffmpegPath);
+        commands.add("-re");
+        commands.add("-stream_loop");
+        commands.add(live.getLoop().toString());
+        commands.add("-i");
+        commands.add(baseDir+"/test.mp4");
+        commands.add("-vcodec");
+        commands.add("copy");
+        commands.add("-acodec");
+        commands.add("copy");
+        commands.add("-f");
+        commands.add("flv");
+        commands.add(live.getUrl()+live.getSecret());
+        logger.info(StringUtils.join(commands," "));
+        ProcessBuilder builder = new ProcessBuilder();
+        builder.redirectErrorStream(true);
+        builder.command(commands);
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                InputStream inputStream = null;
+                try {
+                    Process process = builder.start();
+                    inputStream = process.getInputStream();
+                    logger.info("开始推流");
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        logger.info(line);
+                    }
+                    int result=process.waitFor();
+                    logger.info("推流结果：{}",result);
+                } catch (Exception e) {
+                    logger.info("推流失败：{}", ExceptionUtils.getStackTrace(e));
+                }finally {
+                    if (inputStream != null){
+                        try {
+                            inputStream.close();
+                        } catch (IOException e) {
+
+                        }
+                    }
+                }
+            }
+        });
+        thread.start();
+        return Result.success(null);
     }
 }
